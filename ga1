@@ -1,0 +1,53 @@
+# geneticalgos
+library(Rsolnp)
+library(GA)
+
+library(quantmod)
+getSymbols("GOOG",src="yahoo",return.class="ts")
+getSymbols("T",src="yahoo",return.class="ts")
+
+gog<-diff(GOOG[1:2583,4])
+att<-diff(T[1:2583,4])
+
+longi<-min(length(gog),length(att))
+
+a1<-mean(gog)
+a2<-mean(att)
+
+portf<-function(w){
+  w[1]*a1+w[2]*a2
+}
+
+mat<-matrix(c(gog,att),longi,2)
+
+cov<-cov(mat)
+
+# Funcion objetivo
+obj<-function(w){
+  eval=as.vector(w)%*%cov%*%as.vector(t(w))
+  as.numeric(eval)
+}
+
+restr<-function(x){
+  suma=sum(x)
+  return(as.numeric(suma))
+}
+
+x0<-c(0.5,0.5)
+result<-solnp(x0,fun=obj,eqfun=restr,eqB=1,LB=c(0,0))
+marksol<-optim$pars
+
+portf(marksol)
+
+fitness<-function(x){
+  f<-  -obj(x) -abs(sum(x)-1)
+}
+
+gsol<-ga("real-valued",fitness=fitness,min=c(0,0),max=c(1,1),maxiter = 3100,run = 1000,seed=1)
+plot(gsol)
+
+paste(obj(marksol),obj(gsol@solution))  # Los resultados de gsol se extraen con @ y no con $.
+
+
+
+
